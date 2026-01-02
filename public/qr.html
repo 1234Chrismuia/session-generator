@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Generator</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        #status {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-size: 1.1em;
+            color: #666;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #qr-container {
+            margin: 30px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 15px;
+            border: 2px dashed #ddd;
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #qr-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+        }
+
+        #session-data {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            margin-top: 20px;
+            text-align: left;
+            display: none;
+        }
+
+        textarea {
+            width: 100%;
+            height: 120px;
+            margin: 15px 0;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 0.9em;
+            resize: none;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            flex: 1;
+            min-width: 120px;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .copy-btn {
+            background: #25D366;
+            color: white;
+        }
+
+        .copy-btn:hover {
+            background: #1da851;
+            transform: translateY(-2px);
+        }
+
+        .download-btn {
+            background: #667eea;
+            color: white;
+        }
+
+        .download-btn:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+
+        .new-btn {
+            background: #f39c12;
+            color: white;
+        }
+
+        .new-btn:hover {
+            background: #e67e22;
+            transform: translateY(-2px);
+        }
+
+        .back-btn {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .back-btn:hover {
+            background: #7f8c8d;
+            transform: translateY(-2px);
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 10px 10px 0;
+            text-align: left;
+        }
+
+        .info-box h4 {
+            color: #1565c0;
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .buttons {
+                flex-direction: column;
+            }
+            
+            button {
+                width: 100%;
+            }
+        }
+
+        /* Loading animation */
+        .loading {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #25D366;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>📱 WhatsApp Session Generator</h2>
+        
+        <div id="status">
+            <div class="loading"></div>
+            <span style="margin-left: 10px;">Initializing...</span>
+        </div>
+        
+        <div id="qr-container">
+            <!-- QR code will appear here -->
+        </div>
+        
+        <div id="session-data">
+            <h3>✅ Session Generated Successfully!</h3>
+            
+            <div class="info-box">
+                <h4>📋 Usage Instructions:</h4>
+                <p>1. Copy the session string below</p>
+                <p>2. Paste it in your config.env file as:</p>
+                <p style="font-family: monospace; background: #fff; padding: 5px; border-radius: 5px; margin: 5px 0;">SESSION_ID='paste_here'</p>
+                <p>3. Save and restart your bot</p>
+            </div>
+            
+            <textarea id="session-string" readonly placeholder="Session will appear here..."></textarea>
+            
+            <div class="buttons">
+                <button class="copy-btn" onclick="copySession()">
+                    📋 Copy Session
+                </button>
+                <button class="download-btn" onclick="downloadSession()">
+                    💾 Download
+                </button>
+                <button class="new-btn" onclick="generateNew()">
+                    🔄 New Session
+                </button>
+                <button class="back-btn" onclick="goHome()">
+                    🏠 Home
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionId = urlParams.get('session') || ('session_' + Date.now());
+        
+        socket.emit('join', sessionId);
+        
+        socket.on('qr', (qrImage) => {
+            document.getElementById('status').innerHTML = '📱 Scan QR Code with WhatsApp';
+            document.getElementById('qr-container').innerHTML = `<img src="${qrImage}" alt="QR Code">`;
+        });
+        
+        socket.on('status', (message) => {
+            document.getElementById('status').innerHTML = message;
+        });
+        
+        socket.on('connected', (data) => {
+            document.getElementById('qr-container').innerHTML = '';
+            document.getElementById('session-data').style.display = 'block';
+            
+            // Format session string for config.env
+            const sessionString = data.sessionString;
+            const escapedString = sessionString.replace(/'/g, "\\'");
+            const configLine = `SESSION_ID='${escapedString}'`;
+            
+            document.getElementById('session-string').value = configLine;
+            
+            // Add info display
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'info-box';
+            infoDiv.innerHTML = `
+                <h4>📊 Session Info:</h4>
+                <p><strong>User ID:</strong> ${data.userInfo?.id || 'N/A'}</p>
+                <p><strong>Base64 Length:</strong> ${data.base64String.length} characters</p>
+                <p><strong>JSON Length:</strong> ${sessionString.length} characters</p>
+            `;
+            document.getElementById('session-data').insertBefore(infoDiv, document.getElementById('session-string'));
+        });
+        
+        function copySession() {
+            const textarea = document.getElementById('session-string');
+            textarea.select();
+            document.execCommand('copy');
+            
+            // Visual feedback
+            const btn = document.querySelector('.copy-btn');
+            const original = btn.innerHTML;
+            btn.innerHTML = '✅ Copied!';
+            btn.style.background = '#4CAF50';
+            
+            setTimeout(() => {
+                btn.innerHTML = original;
+                btn.style.background = '';
+            }, 2000);
+        }
+        
+        function downloadSession() {
+            const textarea = document.getElementById('session-string');
+            const blob = new Blob([textarea.value], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'whatsapp-session.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        function generateNew() {
+            window.location.href = '/generate';
+        }
+        
+        function goHome() {
+            window.location.href = '/';
+        }
+        
+        // Auto-start session generation if no session ID
+        if (!urlParams.has('session')) {
+            window.location.href = '/generate';
+        }
+    </script>
+</body>
+</html>
