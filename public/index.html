@@ -62,12 +62,6 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
 
-        .feature i {
-            font-size: 2em;
-            margin-bottom: 10px;
-            color: #667eea;
-        }
-
         .feature h3 {
             margin-bottom: 10px;
             color: #333;
@@ -94,16 +88,12 @@
             transition: all 0.3s;
             width: 100%;
             max-width: 300px;
+            text-decoration: none;
         }
 
         .generate-btn:hover {
             transform: scale(1.05);
             box-shadow: 0 10px 20px rgba(37, 211, 102, 0.3);
-        }
-
-        .generate-btn:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
         }
 
         .instructions {
@@ -144,6 +134,29 @@
             margin-bottom: 20px;
         }
 
+        .step {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .step-number {
+            background: #25D366;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+
         @media (max-width: 600px) {
             .container {
                 padding: 20px;
@@ -157,20 +170,6 @@
                 grid-template-columns: 1fr;
             }
         }
-
-        /* Icons */
-        .icon {
-            display: inline-block;
-            width: 24px;
-            height: 24px;
-            margin-right: 8px;
-            vertical-align: middle;
-        }
-        
-        .qr-icon { background: #667eea; }
-        .key-icon { background: #25D366; }
-        .cloud-icon { background: #764ba2; }
-        .copy-icon { background: #f39c12; }
     </style>
 </head>
 <body>
@@ -181,52 +180,96 @@
         
         <div class="features">
             <div class="feature">
-                <div class="icon qr-icon"></div>
                 <h3>QR Code Login</h3>
-                <p>Simple QR code scanning - no password needed</p>
+                <p>Simple QR code scanning with WhatsApp</p>
             </div>
             <div class="feature">
-                <div class="icon key-icon"></div>
                 <h3>Direct Session String</h3>
-                <p>Get the actual session JSON, not just links</p>
+                <p>Get the actual session JSON for your bot</p>
             </div>
             <div class="feature">
-                <div class="icon cloud-icon"></div>
-                <h3>No Storage</h3>
-                <p>Sessions are generated locally and not stored</p>
+                <h3>Real-time Updates</h3>
+                <p>Live status updates during generation</p>
             </div>
             <div class="feature">
-                <div class="icon copy-icon"></div>
-                <h3>Easy Copy</h3>
-                <p>One-click copy to clipboard</p>
+                <h3>One-Click Copy</h3>
+                <p>Easy copy to clipboard</p>
             </div>
         </div>
         
-        <button class="generate-btn" onclick="generateSession()">
+        <a href="/api/generate" class="generate-btn" id="generateBtn">
             🔐 Generate Session
-        </button>
+        </a>
         
         <div class="instructions">
-            <h3>📋 How to Use:</h3>
-            <ol>
-                <li>Click "Generate Session" button</li>
-                <li>Scan the QR code with WhatsApp on your phone</li>
-                <li>Wait for connection (takes a few seconds)</li>
-                <li>Copy the generated session string</li>
-                <li>Paste it in your bot's config.env as SESSION_ID</li>
-                <li>Restart your bot</li>
-            </ol>
+            <h3>📋 How It Works:</h3>
+            
+            <div class="step">
+                <div class="step-number">1</div>
+                <div>Click "Generate Session" button</div>
+            </div>
+            
+            <div class="step">
+                <div class="step-number">2</div>
+                <div>Scan QR code with WhatsApp on your phone</div>
+            </div>
+            
+            <div class="step">
+                <div class="step-number">3</div>
+                <div>Wait for connection (takes a few seconds)</div>
+            </div>
+            
+            <div class="step">
+                <div class="step-number">4</div>
+                <div>Copy the generated session string</div>
+            </div>
+            
+            <div class="step">
+                <div class="step-number">5</div>
+                <div>Use in your bot's config.env as SESSION_ID</div>
+            </div>
         </div>
         
         <div class="warning">
             ⚠️ <strong>Important:</strong> Keep your session string secure! Anyone with this string can access your WhatsApp account. Sessions are generated locally and not stored on the server.
         </div>
+        
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; color: #666; font-size: 0.9em;">
+            <p>Compatible with: Baileys WhatsApp bots, Jespher Bot, and other WhatsApp bot frameworks</p>
+        </div>
     </div>
 
     <script>
-        function generateSession() {
-            window.location.href = '/generate';
-        }
+        document.getElementById('generateBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Show loading
+            const btn = this;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '⏳ Generating...';
+            btn.style.opacity = '0.7';
+            btn.style.cursor = 'wait';
+            
+            // Make API call
+            fetch('/api/generate')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.href = '/session/' + data.sessionId;
+                    } else {
+                        alert('Error: ' + (data.message || 'Failed to generate session'));
+                        btn.innerHTML = originalText;
+                        btn.style.opacity = '1';
+                        btn.style.cursor = 'pointer';
+                    }
+                })
+                .catch(error => {
+                    alert('Error: ' + error.message);
+                    btn.innerHTML = originalText;
+                    btn.style.opacity = '1';
+                    btn.style.cursor = 'pointer';
+                });
+        });
     </script>
 </body>
 </html>
