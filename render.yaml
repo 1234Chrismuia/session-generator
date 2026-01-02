@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: whatsapp-session-generator
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+    healthCheckPath: /
+    autoDeploy: true
